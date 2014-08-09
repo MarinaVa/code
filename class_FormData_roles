@@ -1,0 +1,35 @@
+<?php
+
+class FormData_roles extends FormData_global
+{
+    
+    function load($key)
+    {
+        global $GB;
+        
+        switch($key) {
+            case 'modules':
+                $modules = $GB->ad('RolesAD')->getModulesList('webAdmin', true);
+                
+                // unset permissions that are not in current user's permissions list
+                foreach($modules as $k => $module) {
+                    if(empty($GB->user->role[$k])) {
+                        unset($modules[$k]);
+                        continue;
+                    }
+                    $modules[$k]['acls'] = array_intersect($GB->user->role[$k], $module['acls']);
+                } 
+                return $modules;
+                
+            case 'modules_list':
+                $res = array();
+                foreach($this->modules as $key => $module) {
+                    $res[$key] = $module['title'];
+                }
+                return $res;
+                
+            default:
+                return parent::load($key);
+        }
+    }
+}
