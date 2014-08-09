@@ -1,0 +1,60 @@
+ <?php
+ 
+     /*
+     *  Loads client's card number
+     */
+    private function getCreditCardNumber($access_data)
+    {
+        $request = new AuthorizeNetCIM($access_data['api_login_id'], $access_data['transaction_key']);
+        
+        // get from testing mode to production
+        $request->setSandbox(false); 
+        
+        $res = $request->getCustomerPaymentProfile(
+            $access_data['customer_profile_id'], 
+            $access_data['customer_payment_profile_id'], 
+            $access_data['api_login_id'], 
+            $access_data['transaction_key']
+        );
+      
+        if($res->xml->messages->resultCode == 'Error'){
+            return false;
+        }     
+        return (string)$res->xml->paymentProfile->payment->creditCard->cardNumber;          
+    }
+    
+    /*
+     *  Deletes customer's payment profile
+     */
+    private function deletePaymentProfile($pk, $access_data)
+    {
+        global $GB;
+
+        if (!ClientForm::loadItem(@$pk['id_clients'])) {
+            return false;
+        }
+        
+        $request = new AuthorizeNetCIM($access_data['api_login_id'], $access_data['transaction_key']);
+        
+        // get from testing mode to production
+        $request->setSandbox(false); 
+        
+        try {
+            $request->deleteCustomerPaymentProfile(
+                $access_data['customer_profile_id'], 
+                $access_data['customer_payment_profile_id'], 
+                $access_data['api_login_id'], 
+                $access_data['transaction_key']
+            );
+            $request->deleteCustomerProfile(
+                $access_data['customer_profile_id'], 
+                $access_data['api_login_id'], 
+                $access_data['transaction_key']
+            );
+        } catch(AuthnetCIMException $e) {
+            throw new Exception($e->getErrorMessage(), 161);
+        }
+        
+        $res = $GB->ad('PayGwClientsProfilesAD')->delete($pk);
+        $this->resCode = $res? 202 : 302;
+    }
