@@ -1,0 +1,32 @@
+function codes_import($input = array())
+{
+    global $GB;
+
+    if (!CodeDecksForm::loadItem(@$input['id_code_decks'])) {
+        return false;
+    }
+ 
+    if($input['return']) {
+        return false;
+    }
+    
+    $extra = array(
+        'root_path' => $GB->conf['path']['root'],
+        'module' => $GB->request['module'],
+        'tmp_dir' => $GB->conf['path']['cache'].'/import',
+        'tmp_filepath' => $input['tmp_filepath'],
+        'skip_rows' => $input['skip_rows']
+    );
+
+    $GB->output['import'] = new CodesImport($input, $extra);
+
+    $GB->M->init('code_decks', 'codes_import');
+    $GB->output['import']->stage = 2;
+   
+    $result = $GB->output['import']->processStage(); 
+    
+    $GB->output['import']->messages = array_unique($GB->output['import']->messages);
+    process_messages($GB->output['import']->messages);
+    $GB->output['rows'] = array();
+    return $result;
+}
